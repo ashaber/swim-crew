@@ -142,7 +142,9 @@ function renderTimerUI() {
   document.getElementById('prestart-ui').classList.toggle('hidden', start);
   document.getElementById('stopped-ui').classList.toggle('hidden', !stopped);
   document.getElementById('stop-swim-btn').classList.toggle('hidden', !racing);
-  document.getElementById('feed-area').classList.toggle('hidden', !racing || !athletes.length);
+  document.getElementById('feed-area').classList.toggle('hidden', !start || !athletes.length);
+  document.getElementById('feed-form-container').classList.toggle('hidden', !racing);
+  document.getElementById('feed-paused-msg').classList.toggle('hidden', racing);
 }
 
 // ── Feed form ────────────────────────────────────────────────────────────────
@@ -159,7 +161,7 @@ function resetFeedForm() {
   const manualEl = document.getElementById('manual-distance');
   if (manualEl) manualEl.value = '';
   const gpsStatus = document.getElementById('gps-status');
-  if (gpsStatus) gpsStatus.textContent = '';
+  if (gpsStatus) gpsStatus.textContent = '📍 GPS pin drops automatically on save';
   updateGelDisplay();
   updateTransitionDisplay();
 }
@@ -191,36 +193,42 @@ function selectCondition(btn) {
   else condition = null;
 }
 
-function dropGpsPin() {
-  const statusEl = document.getElementById('gps-status');
-  if (!navigator.geolocation) {
-    statusEl.textContent = 'GPS not available on this device.';
-    return;
-  }
-  statusEl.textContent = 'Getting location…';
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      location_ = { method: 'gps', lat: pos.coords.latitude, lng: pos.coords.longitude };
-      statusEl.textContent = `Pin dropped ✓ (±${Math.round(pos.coords.accuracy)}m accuracy)`;
-    },
-    err => {
-      statusEl.textContent = `GPS failed (${err.message}). Use manual distance below.`;
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  );
+function getGpsPin() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) { resolve({ error: 'GPS not available on this device.' }); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ pos }),
+      err => resolve({ error: err.message }),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
 }
 
-function saveFeed() {
+async function saveFeed() {
   if (!activeId) return;
   const now = new Date();
   const drink = document.querySelector('.check-opt[data-id="drink"]').classList.contains('checked');
   const water = document.querySelector('.check-opt[data-id="water"]').classList.contains('checked');
   const notes = document.getElementById('feed-notes').value.trim();
-
   const manualDistance = parseFloat(document.getElementById('manual-distance').value);
-  let loc = location_;
-  if (!loc && !isNaN(manualDistance)) {
+
+  const statusEl = document.getElementById('gps-status');
+  const saveBtn  = document.querySelector('.btn-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+  statusEl.textContent = 'Dropping GPS pin…';
+
+  const { pos, error } = await getGpsPin();
+  let loc = null;
+  let resultMsg;
+  if (pos) {
+    loc = { method: 'gps', lat: pos.coords.latitude, lng: pos.coords.longitude };
+    resultMsg = `Pin dropped ✓ (±${Math.round(pos.coords.accuracy)}m accuracy)`;
+  } else if (!isNaN(manualDistance)) {
     loc = { method: 'manual', distanceM: manualDistance };
+    resultMsg = 'Saved using manual distance.';
+  } else {
+    resultMsg = `GPS failed (${error}). Saved without location.`;
   }
 
   feeds.push({
@@ -236,7 +244,10 @@ function saveFeed() {
   });
 
   saveFeeds(feeds);
+  saveBtn.disabled = false;
+  saveBtn.textContent = 'Save Feed';
   resetFeedForm();
+  statusEl.textContent = resultMsg;
   renderFeedHistory();
 }
 
@@ -460,7 +471,7 @@ Object.assign(window, {
   showTab,
   addAthlete, removeAthlete, swipeAthlete, selectAthleteDot, toggleAddAthleteForm,
   startSwim, stopSwim, resumeSwim, resetSwim, clearAllData,
-  toggleCheck, adjustGel, adjustTransition, selectCondition, dropGpsPin,
+  toggleCheck, adjustGel, adjustTransition, selectCondition,
   saveFeed, deleteFeed,
   toggleClItem, resetChecklist,
   toggleTlItem,

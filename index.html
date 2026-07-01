@@ -91,8 +91,6 @@
     .cond-btn { flex: 1; background: var(--surface2); border: 2px solid transparent; border-radius: 10px; font-size: 22px; padding: 10px 2px; cursor: pointer; text-align: center; }
     .cond-btn.selected { border-color: var(--green); background: rgba(48,209,88,0.12); }
 
-    .gps-row { display: flex; gap: 8px; margin-bottom: 8px; }
-    .btn-gps { flex: 1; background: var(--surface2); border: none; border-radius: 10px; color: var(--text); font-size: 13px; font-weight: 700; padding: 12px; cursor: pointer; }
     .gps-status { font-size: 12px; color: var(--text2); margin-bottom: 8px; min-height: 16px; }
     .manual-distance-input { width: 100%; background: var(--surface2); border: none; border-radius: 10px; color: var(--text); font-size: 14px; padding: 10px 12px; font-family: inherit; }
     .manual-distance-input::placeholder { color: var(--text2); }
@@ -222,6 +220,8 @@
         <div id="athlete-swipe"></div>
         <button id="add-athlete-toggle-btn" class="export-btn hidden" onclick="toggleAddAthleteForm()">+ Add athlete</button>
 
+        <div id="feed-paused-msg" class="no-feeds hidden">Feed entry paused — tap Resume to continue logging.</div>
+
         <div id="feed-form-container">
           <div class="form-section">
             <div class="form-section-title">Given</div>
@@ -262,10 +262,7 @@
 
           <div class="form-section">
             <div class="form-section-title">Distance / Pace</div>
-            <div class="gps-row">
-              <button class="btn-gps" onclick="dropGpsPin()">📍 Drop GPS Pin</button>
-            </div>
-            <div class="gps-status" id="gps-status"></div>
+            <div class="gps-status" id="gps-status">📍 GPS pin drops automatically on save</div>
             <input class="manual-distance-input" id="manual-distance" type="number" step="1" placeholder="Or enter cumulative distance (m) manually" />
           </div>
 
