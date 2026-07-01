@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="swim-crew">
   <meta name="theme-color" content="#0d0d0d">
+  <meta name="description" content="Crew feed and pace tracker for ultra open-water swims.">
+  <link rel="icon" href="%BASE_URL%icon.svg" type="image/svg+xml">
+  <link rel="icon" href="%BASE_URL%favicon-32x32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png">
   <title>swim-crew</title>
   <style>
     :root {
@@ -21,9 +26,11 @@
       --nav-h: 60px;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html { scrollbar-gutter: stable; }
     html, body { height: 100%; background: var(--bg); color: var(--text); }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
     #app { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+    #app > main { display: contents; }
 
     #race-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 16px; position: sticky; top: 0; z-index: 20; }
     .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -192,6 +199,7 @@
     </div>
   </header>
 
+  <main>
   <!-- ══════════════════════════════ FEED TAB ══════════════════════════════ -->
   <div class="tab-panel active" id="panel-feed">
     <div class="feed-hero">
@@ -311,6 +319,7 @@
   <div class="tab-panel" id="panel-plan">
     <div id="plan-content" class="static-content"></div>
   </div>
+  </main>
 
   <nav class="bottom-nav">
     <button class="nav-btn active" id="nav-feed" onclick="showTab('feed')">
