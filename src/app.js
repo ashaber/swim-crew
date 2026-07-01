@@ -4,13 +4,13 @@ import {
   getRawStart, setStartEpoch, clearStart,
   getRaceStopped, setRaceStopped, clearRaceStopped,
   getClState, saveClState, clearClState,
-  getTimelineState, saveTimelineState,
+  getTimelineState, saveTimelineState, clearTimelineState,
   getNotes, saveNotes,
   getActiveAthleteId, setActiveAthleteId,
 } from './storage.js';
 import {
-  FEED_INTERVAL_MS, getRaceStart, getCurrentIntervalNum, getMsUntilNextFeed,
-  formatHMS, formatHM, formatMM,
+  getRaceStart, getCurrentIntervalNum, getMsUntilNextFeed,
+  formatHMS, formatMM,
 } from './timer.js';
 import { newAthlete, findAthlete, resolveActiveId, nextAthleteId } from './athletes.js';
 import { COND_EMOJI, calcPace, calcFeedStats, exportSwimData } from './feeds.js';
@@ -27,7 +27,6 @@ let activeId   = resolveActiveId(athletes, getActiveAthleteId());
 let gel        = 0;
 let transitionSec = 0;
 let condition  = null;
-let location_  = null; // { method: 'gps'|'manual', lat, lng, distanceM }
 let addAthleteFormOpen = false;
 
 // ── Athletes ─────────────────────────────────────────────────────────────────
@@ -103,7 +102,7 @@ function resetSwim() {
 }
 
 function clearAllData() {
-  if (!confirm('Clear ALL data? This removes all feeds, athletes, and resets the timer.')) return;
+  if (!confirm('Clear ALL data? This removes all feeds, athletes, notes, and checklist/timeline progress, and resets the timer.')) return;
   athletes = [];
   feeds = [];
   saveAthletes(athletes);
@@ -111,7 +110,21 @@ function clearAllData() {
   clearStart();
   clearRaceStopped();
   activeId = null;
+
+  clState = null;
+  clearClState();
+  initClState();
+
+  tlState = null;
+  clearTimelineState();
+  initTlState();
+
+  saveNotes('');
+  document.getElementById('swim-notes').value = '';
+
   renderFeedTab();
+  renderChecklist();
+  renderTimeline();
 }
 
 // Reference point for the next-feed countdown: the active athlete's own last
@@ -131,7 +144,8 @@ function getFeedCount(athleteId) {
 }
 
 function tickClock() {
-  const now   = new Date();
+  const stoppedAt = getRaceStopped();
+  const now = stoppedAt ? new Date(parseInt(stoppedAt)) : new Date();
   const start = getRaceStart();
   const elEl  = document.getElementById('elapsed-display');
   const nextEl = document.getElementById('next-feed-display');
@@ -169,7 +183,6 @@ function resetFeedForm() {
   gel = 0;
   transitionSec = 0;
   condition = null;
-  location_ = null;
   document.querySelectorAll('.check-opt').forEach(b => b.classList.remove('checked'));
   document.querySelectorAll('.cond-btn').forEach(b => b.classList.remove('selected'));
   const notesEl = document.getElementById('feed-notes');
@@ -352,6 +365,26 @@ function renderFeedHistory() {
   container.innerHTML = html;
 }
 
+const SWIPE_MIN_DISTANCE_PX = 40;
+
+// #athlete-swipe's own innerHTML is replaced on every render, so the
+// listener is attached once to the stable container rather than the
+// regenerated buttons/dots inside it.
+function initSwipeGesture() {
+  const el = document.getElementById('athlete-swipe');
+  if (!el) return;
+  let startX = null, startY = null;
+  el.addEventListener('pointerdown', e => { startX = e.clientX; startY = e.clientY; });
+  el.addEventListener('pointerup', e => {
+    if (startX == null) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    startX = null; startY = null;
+    if (Math.abs(dx) < SWIPE_MIN_DISTANCE_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    swipeAthlete(dx < 0 ? 1 : -1);
+  });
+}
+
 function renderFeedTab() {
   const noAthletes = document.getElementById('no-athletes-ui');
   if (noAthletes) noAthletes.classList.toggle('hidden', athletes.length > 0 && !addAthleteFormOpen);
@@ -505,6 +538,7 @@ initTlState();
 renderTimeline();
 renderFeedTab();
 resetFeedForm();
+initSwipeGesture();
 setInterval(tickClock, 1000);
 tickClock();
 

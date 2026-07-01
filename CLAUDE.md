@@ -38,6 +38,22 @@ Use these instead of reinventing one-off verification scripts. If a check doesn'
 
 ---
 
+## Pre-event configuration
+
+Before a swim, edit these three files directly (no in-app editor by design — long content is impractical to type on a phone; these get set up ahead of time on a computer, then built/deployed):
+
+- **`swim-plan.md`** — feed protocol, pacing table, notes. Rendered into the Plan tab via `marked.js`.
+- **`checklist-config.js`** — pre-swim checklist sections/items. Schema and edit notes are commented at the top of the file.
+- **`timeline-config.js`** — pre/post-race timeline events, offsets in minutes/hours relative to race start via the `MIN`/`HOUR` helpers (not raw milliseconds). Exactly one event must have `isStart: true`.
+
+`tests/unit/config.test.js` validates both config files' shape (unique ids, exactly one `isStart` event, etc.) — run `npm test` after editing them to catch typos before race day, not during it.
+
+## Bug log
+
+`DEFECTS.md` is the running bug list — check it for open items before starting work, and check items off (with what fixed them and which test covers it) rather than deleting the entry.
+
+---
+
 ## Data model
 
 ```js
@@ -66,8 +82,8 @@ src/
   timer.js     — pure interval/countdown math (getCurrentIntervalNum(feedCount), getMsUntilNextFeed(referenceTime, now))
   athletes.js  — athlete CRUD, swipe/active-athlete resolution
   feeds.js     — haversine distance, calcPace (GPS or manual fallback), calcFeedStats
-  checklist.js — hardcoded checklist items (feed station, boat/shore, athlete gear, race day) — see Known Gaps
-  timeline.js  — hardcoded offset-based pre/post-race events, resolved against manual race start — see Known Gaps
+  checklist.js — checklist logic; data comes from ../checklist-config.js (see Pre-event configuration)
+  timeline.js  — timeline resolution logic; data comes from ../timeline-config.js (see Pre-event configuration)
 tests/unit/    — Vitest, pure logic only
 tests/e2e/     — Playwright, full browser + PWA behavior
 scripts/lighthouse.mjs — see Commands above
@@ -84,12 +100,14 @@ scripts/lighthouse.mjs — see Commands above
 - **GPS auto-drops on Save** — no separate "Drop GPS Pin" step; tapping Save Feed itself requests the location, with manual-distance as the fallback if GPS fails or is denied.
 - **Stopping the swim blocks new entries, not the log** — `#feed-form-container` hides while stopped; feed history/stats/export stay visible.
 - **PWA via `vite-plugin-pwa`** — `registerType: 'autoUpdate'`, Workbox `generateSW` mode, no runtime caching needed (no backend calls to cache). Icons are a hand-drawn SVG (`public/icon.svg`) rasterized to the required sizes, not a designer asset — replace when real branding exists.
+- **Pre-event config over in-app editing** — Plan/Checklist/Timeline are edited as files before an event (see Pre-event configuration above), not through phone UI, since typing a long plan on a phone mid-swim isn't the workflow — configure ahead of time, then just log during the event.
+- **Stopping the swim freezes the clock** — `tickClock()` uses the stop timestamp (not live wall-clock time) as `now` while stopped, so elapsed/countdown displays hold still instead of continuing to tick.
+- **Athlete swipe is a real pointer gesture** — `initSwipeGesture()` listens on the stable `#athlete-swipe` container (not the regenerated buttons inside it, which get replaced on every render) so the listener survives re-renders.
 
 ## Known Gaps / Deferred
 
 - [ ] Garmin Connect IQ / Edge 540 app — separate toolchain, future phase
 - [ ] `swim-plan.md` pacing table is placeholder ("TBD") — fill in once target paces are known
-- [ ] **Plan, Timeline, and Checklist content is hardcoded** (`swim-plan.md` for Plan; `TIMELINE_TEMPLATE` in `timeline.js`; `CHECKLIST` in `checklist.js`) — next planned work is making these configurable rather than requiring a code change to adjust
 - [ ] No rename/edit UI for an athlete once added (can add and remove, not edit target distance after the fact)
 - [ ] Accessibility: color-contrast and the `user-scalable=no` viewport setting were flagged by Lighthouse but left as-is — pre-existing dark-theme/no-pinch-zoom mobile UX choices, not something to change without a product decision
 - [ ] CI runs e2e only on push to `main` (i.e., after merge) — no validation workflow runs on the PR itself yet

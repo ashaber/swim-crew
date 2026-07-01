@@ -1,25 +1,6 @@
-// Offsets are in ms relative to race start (negative = before start).
-export const TIMELINE_TEMPLATE = [
-  {
-    id: 'pre_race',
-    title: 'Pre-Race',
-    events: [
-      { id: 'arrive',      label: 'Arrive at venue, check in',            offsetMs: -90 * 60000 },
-      { id: 'crew_brief',  label: 'Brief crew on feed plan (every 30min)', offsetMs: -30 * 60000 },
-      { id: 'warmup',      label: 'Athlete warmup / water entry',         offsetMs: -15 * 60000 },
-      { id: 'start',       label: '🏊 Swim Start', offsetMs: 0, isStart: true },
-    ],
-  },
-  {
-    id: 'post_race',
-    title: 'Post-Race',
-    events: [
-      { id: 'finish_watch', label: 'Track expected finish window', offsetMs: 3 * 3600000 },
-      { id: 'warm_layers',  label: 'Warm layers + food ready at finish', offsetMs: 3 * 3600000 },
-      { id: 'export_data',  label: 'Export swim-crew feed data (JSON)', offsetMs: 3.5 * 3600000 },
-    ],
-  },
-];
+import TIMELINE_TEMPLATE from '../timeline-config.js';
+
+export { TIMELINE_TEMPLATE };
 
 export function buildDefaultTlState() {
   const state = {};

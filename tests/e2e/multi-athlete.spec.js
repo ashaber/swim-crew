@@ -32,3 +32,22 @@ test('a second athlete can be added and swiped to after the first', async ({ pag
   await page.locator('.swipe-arrow').first().click();
   await expect(page.locator('.swipe-name')).toContainText('Alice');
 });
+
+test('a real swipe gesture (not just the arrow buttons) switches the active athlete', async ({ page }) => {
+  await page.fill('#new-athlete-name', 'Alice');
+  await page.click('.btn-add-athlete');
+  await page.click('#start-swim-btn');
+  await page.click('#add-athlete-toggle-btn');
+  await page.fill('#new-athlete-name', 'Bob');
+  await page.click('.btn-add-athlete');
+  await expect(page.locator('.swipe-name')).toContainText('Bob');
+
+  const box = await page.locator('#athlete-swipe').boundingBox();
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width - 10, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 10, y, { steps: 5 });
+  await page.mouse.up();
+
+  await expect(page.locator('.swipe-name')).toContainText('Alice');
+});
