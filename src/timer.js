@@ -28,12 +28,6 @@ export function formatHMS(ms) {
   return `${Math.floor(s / 3600)}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
 }
 
-export function formatHM(ms) {
-  if (ms < 0) return '0:00';
-  const s = Math.floor(ms / 1000);
-  return `${Math.floor(s / 3600)}:${pad(Math.floor((s % 3600) / 60))}`;
-}
-
 export function formatMM(ms) {
   if (ms < 0) return '0:00';
   const s = Math.floor(ms / 1000);

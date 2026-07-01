@@ -64,3 +64,21 @@ test('stopping the swim blocks new entries but keeps the feed log, stats, and ex
   await expect(page.locator('#feed-form-container')).toBeVisible();
   await expect(page.locator('.feed-row')).toHaveCount(1);
 });
+
+test('stopping the swim freezes the elapsed clock and next-feed countdown', async ({ page }) => {
+  await page.fill('#new-athlete-name', 'Alice');
+  await page.click('.btn-add-athlete');
+  await page.click('#start-swim-btn');
+  await page.waitForTimeout(1200); // let the clock tick at least once past 0:00:00
+
+  page.once('dialog', d => d.accept());
+  await page.click('#stop-swim-btn');
+
+  const elapsedAtStop = await page.locator('#elapsed-display').textContent();
+  const nextFeedAtStop = await page.locator('#next-feed-display').textContent();
+
+  await page.waitForTimeout(2500); // more than two tick intervals
+
+  await expect(page.locator('#elapsed-display')).toHaveText(elapsedAtStop);
+  await expect(page.locator('#next-feed-display')).toHaveText(nextFeedAtStop);
+});
