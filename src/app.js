@@ -114,6 +114,22 @@ function clearAllData() {
   renderFeedTab();
 }
 
+// Reference point for the next-feed countdown: the active athlete's own last
+// feed, or race start if they haven't been fed yet.
+function getFeedReferenceTime(athleteId) {
+  const start = getRaceStart();
+  if (!athleteId) return start;
+  const athleteFeeds = feeds.filter(f => f.athlete_id === athleteId);
+  if (!athleteFeeds.length) return start;
+  const last = athleteFeeds.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
+  return new Date(last.timestamp);
+}
+
+function getFeedCount(athleteId) {
+  if (!athleteId) return 0;
+  return feeds.filter(f => f.athlete_id === athleteId).length;
+}
+
 function tickClock() {
   const now   = new Date();
   const start = getRaceStart();
@@ -129,8 +145,8 @@ function tickClock() {
   }
 
   elEl.textContent = formatHMS(now - start);
-  intEl.textContent = `#${getCurrentIntervalNum(now)}`;
-  const msLeft = getMsUntilNextFeed(now);
+  intEl.textContent = `#${getCurrentIntervalNum(getFeedCount(activeId))}`;
+  const msLeft = getMsUntilNextFeed(getFeedReferenceTime(activeId), now);
   nextEl.textContent = formatMM(msLeft);
   nextEl.className = 'clock-value ' + (msLeft < 2 * 60000 ? 'cv-red' : 'cv-accent');
 }
@@ -234,7 +250,7 @@ async function saveFeed() {
   feeds.push({
     id: crypto.randomUUID(),
     athlete_id: activeId,
-    intervalNum: getCurrentIntervalNum(now),
+    intervalNum: getCurrentIntervalNum(getFeedCount(activeId)),
     timestamp: now.getTime(),
     given: { drink, gel, water },
     transitionSec,
@@ -249,6 +265,7 @@ async function saveFeed() {
   resetFeedForm();
   statusEl.textContent = resultMsg;
   renderFeedHistory();
+  tickClock();
 }
 
 function deleteFeed(id) {
@@ -256,6 +273,7 @@ function deleteFeed(id) {
   feeds = feeds.filter(f => f.id !== id);
   saveFeeds(feeds);
   renderFeedHistory();
+  tickClock();
 }
 
 // ── Feed tab render ──────────────────────────────────────────────────────────
@@ -345,6 +363,7 @@ function renderFeedTab() {
   renderTimerUI();
   renderAthleteSwipe();
   renderFeedHistory();
+  tickClock();
 }
 
 // ── Checklist ────────────────────────────────────────────────────────────────

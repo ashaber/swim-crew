@@ -7,21 +7,17 @@ export function getRaceStart() {
   return s ? new Date(parseInt(s)) : null;
 }
 
-export function getElapsedMs(now = new Date()) {
-  const start = getRaceStart();
-  if (!start || now < start) return 0;
-  return now - start;
+// 1-indexed: interval 1 is the wait before the first feed, interval 2 the wait
+// after the first feed, etc. -- one past however many feeds have been given.
+export function getCurrentIntervalNum(feedCount) {
+  return feedCount + 1;
 }
 
-// 1-indexed: interval 1 covers [0, 30min), interval 2 covers [30min, 60min), ...
-export function getCurrentIntervalNum(now = new Date()) {
-  return Math.floor(getElapsedMs(now) / FEED_INTERVAL_MS) + 1;
-}
-
-export function getMsUntilNextFeed(now = new Date()) {
-  const elapsed = getElapsedMs(now);
-  const intoInterval = elapsed % FEED_INTERVAL_MS;
-  return FEED_INTERVAL_MS - intoInterval;
+// ms remaining until the next feed is due, counted from the last feed given
+// (or race start if none yet) -- recording a feed restarts this countdown.
+export function getMsUntilNextFeed(referenceTime, now = new Date()) {
+  if (!referenceTime) return FEED_INTERVAL_MS;
+  return FEED_INTERVAL_MS - (now - referenceTime);
 }
 
 const pad = n => String(n).padStart(2, '0');
